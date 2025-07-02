@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Situations</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Changed background to a more prominent yellow gradient complementing the logo */
+             background-image:url('img/bg.png');
+    	     background-attachment:fixed;
+    	     background-repeat: no-repeat;
+             background-size: cover;
+            /*background: linear-gradient(to top, #FFEB3B, #fff49b);*/
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .main-container {
+            display: flex;
+            flex-direction: row;
+            gap: 2rem;
+            align-items: flex-start;
+            justify-content: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #ffffff;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 1rem;
+        }
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-grow: 1;
+        }
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(7, 60px); /* 7 columns */
+            grid-template-rows: repeat(6, 60px); /* 6 rows */
+            gap: 8px;
+            background-color: #2c3e50; /* Dark Blue from logo */
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden; /* Hide overflow for rounded corners */
+        }
+        .cell {
+            width: 60px;
+            height: 60px;
+            background-color: #ecf0f1; /* Light gray holes */
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #333;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            position: relative;
+            z-index: 1; /* Ensure cells are above the board */
+        }
+        .cell:hover {
+            transform: scale(1.05);
+        }
+        .cell.player1 {
+            background-color: #ff6b6b; /* Red */
+        }
+        .cell.player2 {
+            background-color: #ffe66d; /* Yellow */
+        }
+        .cell.player3 {
+            background-color: #6bff9b; /* Green */
+        }
+        .cell.player4 {
+            background-color: #6b6bff; /* Blue */
+        }
+        .cell.player5 {
+            background-color: #9b6bff; /* Purple */
+        }
+        .cell.player6 {
+            background-color: #ffaa6b; /* Orange */
+        }
+        .cell.player7 {
+            background-color: #6bffde; /* Cyan */
+        }
+        .cell.player8 {
+            background-color: #ff6bc4; /* Pink */
+        }
+        .cell.player9 {
+            background-color: #6bd1ff; /* Light Blue */
+        }
+        .cell.player10 {
+            background-color: #bfff6b; /* Lime Green */
+        }
+        .cell.highlight {
+            border: 3px solid #fff; /* Highlight winning cells */
+        }
+        .column-drop-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(7, 60px);
+            grid-template-rows: repeat(1, 100%); /* Only one row for click area */
+            gap: 8px;
+            padding: 20px;
+            z-index: 2; /* Above cells to capture clicks */
+        }
+        .drop-area {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: auto;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            max-width: 600px;
+            text-align: center;
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .close-button {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: #333;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .player-indicator {
+            width: 35px; /* Adjusted size */
+            height: 35px; /* Adjusted size */
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+            border: 2px solid #ccc;
+        }
+        .player-indicator.player1 { background-color: #ff6b6b; }
+        .player-indicator.player2 { background-color: #ffe66d; }
+        .player-indicator.player3 { background-color: #6bff9b; }
+        .player-indicator.player4 { background-color: #6b6bff; }
+        .player-indicator.player5 { background-color: #9b6bff; }
+        .player-indicator.player6 { background-color: #ffaa6b; }
+        .player-indicator.player7 { background-color: #6bffde; }
+        .player-indicator.player8 { background-color: #ff6bc4; }
+        .player-indicator.player9 { background-color: #6bd1ff; }
+        .player-indicator.player10 { background-color: #bfff6b; }
+
+        .button-style {
+            background-image: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            color: white;
+            padding: 12px 25px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        .button-style:hover {
+            background-image: linear-gradient(to right, #00f2fe 0%, #4facfe 100%);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
+        .button-style:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        .incorrect-button {
+            background-image: linear-gradient(to right, #ff416c 0%, #ff4b2b 100%);
+        }
+        .incorrect-button:hover {
+            background-image: linear-gradient(to right, #ff4b2b 0%, #ff416c 100%);
+        }
+
+        /* Player List Styling */
+        .player-list-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: background-color 0.3s ease;
+        }
+        .player-list-item.current-player {
+            background-color: #e0f7fa; /* Light blue highlight */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+        }
+        .player-list-item .player-name {
+            flex-grow: 1;
+            margin-left: 10px;
+        }
+        .player-list-item .player-score {
+            font-size: 0.9em;
+            color: #555;
+            margin-left: auto; /* Push score to the right */
+        }
+        .player-list-item.has-won {
+            background-color: #d4edda; /* Light green for winners */
+            font-weight: bold;
+        }
+
+        /* Timer Bar */
+        .timer-bar-container {
+            width: 90%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            height: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        .timer-bar {
+            width: 100%;
+            height: 100%;
+            background-color: #4CAF50; /* Green */
+            border-radius: 5px;
+            transition: width 0.5s linear, background-color 0.5s ease;
+        }
+        .timer-bar.warning {
+            background-color: #f44336; /* Red */
+            animation: pulse 0.5s infinite alternate;
+        }
+        @keyframes pulse {
+            from { opacity: 1; }
+            to { opacity: 0.7; }
+        }
+
+        /* Celebration Animation */
+        .celebration-modal {
+            display: none;
+            position: fixed;
+            z-index: 200;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+        .celebration-content {
+            background-color: #fdd835; /* Gold from logo */
+            color: #2c3e50; /* Dark Blue from logo */
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 3em;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transform: scale(0.8);
+            animation: zoomIn 0.5s forwards cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            position: relative;
+            overflow: hidden;
+        }
+        @keyframes zoomIn {
+            to { transform: scale(1); }
+        }
+        .celebration-content::before, .celebration-content::after {
+            content: '🎉';
+            position: absolute;
+            font-size: 1.5em;
+            animation: confetti 1s infinite alternate;
+        }
+        .celebration-content::before {
+            top: 10%; left: 10%;
+        }
+        .celebration-content::after {
+            bottom: 10%; right: 10%;
+            animation-delay: 0.3s;
+        }
+        @keyframes confetti {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-20px) rotate(360deg); opacity: 0.8; }
+        }
+
+        /* Player Name Input Modal */
+        #playerInputModal .modal-content {
+            max-width: 400px;
+        }
+        #playerInputModal input {
+            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 5px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        #playerInputModal .button-style {
+            width: 100%;
+        }
+        #playerCountSelection {
+            margin-bottom: 20px;
+        }
+        #playerCountSelection label {
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        #playerCountSelection select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .player-name-input-group {
+            display: none; /* Hidden by default, shown based on player count */
+        }
+        .player-name-input-group.active {
+            display: block;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 2rem;
+            text-align: center;
+            color: #09022a;
+            font-size: 0.9em;
+        }
+        .footer img {
+            max-width: 150px;
+            margin-top: 10px;
+            filter: drop-shadow(0 0 5px rgba(0,0,0,0.2));
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .sidebar {
+                width: 90%;
+                margin-bottom: 1.5rem;
+            }
+            .game-board {
+                grid-template-columns: repeat(7, 45px); /* Smaller cells for mobile */
+                grid-template-rows: repeat(6, 45px);
+                gap: 6px;
+                padding: 15px;
+            }
+            .cell {
+                width: 45px;
+                height: 45px;
+            }
+            .column-drop-area {
+                grid-template-columns: repeat(7, 45px);
+                gap: 6px;
+                padding: 15px;
+            }
+            .modal-content {
+                max-width: 90%;
+                padding: 20px;
+            }
+            .celebration-content {
+                font-size: 2em;
+                padding: 30px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <img src="img\Westminster Collage Giza-Logo.png" alt="Westminster College Giza Logo" class="mt-8 mb-4 w-40 h-auto">
+    <h1 class="text-4xl font-bold text-gray-800 mb-8">Connect 4 Solutions</h1>
+
+    <div class="main-container">
+        <!-- Player List Sidebar -->
+        <div class="sidebar">
+            <h3 class="text-xl font-semibold mb-4 text-gray-700">Players</h3>
+            <div id="playerList">
+                <!-- Player items will be rendered here -->
+            </div>
+        </div>
+
+        <div class="game-area">
+            <div class="flex items-center justify-center mb-6 text-xl text-gray-700">
+                <span class="mr-2">Current Turn:</span>
+                <div id="currentPlayerIndicator" class="player-indicator"></div>
+                <span id="currentPlayerText"></span>
+            </div>
+
+            <div class="game-board" id="gameBoard">
+                <!-- Cells will be generated by JavaScript -->
+            </div>
+
+            <div class="mt-8 flex space-x-4">
+                <button id="resetButton" class="button-style">Reset Game</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Player Name Input Modal -->
+    <div id="playerInputModal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">Game Setup</h2>
+            <div id="playerCountSelection" class="mb-4">
+                <label for="numPlayersSelect">Number of Players:</label>
+                <select id="numPlayersSelect">
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4" selected>4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                </select>
+            </div>
+
+            <div id="playerNameInputs">
+                <!-- Player name input groups will be dynamically generated here -->
+            </div>
+            <button id="startGameButton" class="button-style">Start Game</button>
+        </div>
+    </div>
+
+    <!-- Question Modal -->
+    <div id="questionModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeModalButton">&times;</span>
+            <div class="timer-bar-container">
+                <div id="timerBar" class="timer-bar"></div>
+            </div>
+            <h2 class="text-2xl font-bold mb-4" id="modalTitle">Question!</h2>
+            <p class="text-lg mb-4 text-gray-700" id="modalQuestion"></p>
+            <p class="text-base text-gray-600 italic hidden" id="modalAnswer"></p> <!-- Hidden by default -->
+            <div id="modalButtons" class="flex justify-center space-x-4 mt-4">
+                <button id="approvedButton" class="button-style">Approved</button>
+                <button id="notApprovedButton" class="button-style incorrect-button">Not Approved</button>
+            </div>
+             <button id="continueButton" class="button-style mt-4 hidden">Continue</button> <!-- Button to dismiss answer -->
+        </div>
+    </div>
+
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="celebration-modal">
+        <div class="celebration-content">
+            <span id="celebrationPlayerName"></span> is <span id="celebrationRank"></span>!
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>By: Naglaa Eldeep</p>
+        <p>Dedicated to TESL course from Westminster College London</p>
+    </footer>
+
+    <script>
+        const ROWS = 6;
+        const COLS = 7;
+        // Define player colors without fixed IDs initially for shuffling
+        const ALL_PLAYER_COLORS = [
+            { colorClass: 'player1', defaultName: 'Player 1' }, // Red
+            { colorClass: 'player2', defaultName: 'Player 2' }, // Yellow
+            { colorClass: 'player3', defaultName: 'Player 3' }, // Green
+            { colorClass: 'player4', defaultName: 'Player 4' },  // Blue
+            { colorClass: 'player5', defaultName: 'Player 5' }, // Purple
+            { colorClass: 'player6', defaultName: 'Player 6' }, // Orange
+            { colorClass: 'player7', defaultName: 'Player 7' }, // Cyan
+            { colorClass: 'player8', defaultName: 'Player 8' }, // Pink
+            { colorClass: 'player9', defaultName: 'Player 9' }, // Light Blue
+            { colorClass: 'player10', defaultName: 'Player 10' } // Lime Green
+        ];
+
+        let players = []; // Will store player objects with names, scores, etc., and assigned color
+        let board = [];
+        let currentPlayerIndex = 0;
+        let gameOver = false;
+        let currentQuestionData = null;
+        let currentQuestionIndex = -1; // To keep track of the index of the current question
+        let pendingMove = { row: -1, col: -1 }; // Stores the intended move until question is answered
+        let timerInterval;
+        let timeLeft;
+        const TURN_TIME = 120; // 2 minutes in seconds
+        let winOrder = []; // To track the order of players who achieve Connect 4
+        let numberOfPlayers = 4; // Default to 4 players, will be set by select input
+
+        // DOM Elements
+        const gameBoardElement = document.getElementById('gameBoard');
+        const currentPlayerIndicator = document.getElementById('currentPlayerIndicator');
+        const currentPlayerText = document.getElementById('currentPlayerText');
+        const resetButton = document.getElementById('resetButton');
+        const questionModal = document.getElementById('questionModal');
+        const closeModalButton = document.getElementById('closeModalButton');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalQuestion = document.getElementById('modalQuestion');
+        const modalAnswer = document.getElementById('modalAnswer');
+        const modalButtons = document.getElementById('modalButtons');
+        const approvedButton = document.getElementById('approvedButton');
+        const notApprovedButton = document.getElementById('notApprovedButton');
+        const continueButton = document.getElementById('continueButton');
+        const timerBar = document.getElementById('timerBar');
+        const playerInputModal = document.getElementById('playerInputModal');
+        const startGameButton = document.getElementById('startGameButton');
+        const playerListContainer = document.getElementById('playerList');
+        const celebrationModal = document.getElementById('celebrationModal');
+        const celebrationPlayerName = document.getElementById('celebrationPlayerName');
+        const celebrationRank = document.getElementById('celebrationRank');
+
+        // Player count select input
+        const numPlayersSelect = document.getElementById('numPlayersSelect');
+        const playerNameInputsContainer = document.getElementById('playerNameInputs');
+
+
+        // Questions data (English)
+        const questions = [
+            {
+                type: "Classroom Situation",
+                question: "The Reluctant Reader: You have a student who struggles with phonics and refuses to read aloud in class. How do you encourage them to participate without putting them on the spot?",
+                answer: "Offer alternative ways to participate, like reading silently, reading with a partner, or recording themselves. Provide high-interest, low-level reading materials. Use positive reinforcement for small efforts."
+            },
+            {
+                type: "Classroom Situation",
+                question: "Grammar Confusion: A student consistently mixes up verb tenses in their writing. What multi-sensory strategies would you employ to help them grasp the concept of past, present, and future tenses?",
+                answer: "Use timelines, gestures, and color-coding for different tenses. Incorporate interactive games and activities where students physically act out or sort sentences by tense. Practice with real-life scenarios."
+            },
+            {
+                type: "Classroom Situation",
+                question: "Emotional Outburst: During a lesson, a child suddenly bursts into tears over a minor mistake. How do you respond to help them manage their emotions while maintaining the flow of the class?",
+                answer: "Acknowledge their feelings calmly and privately if possible. Offer a brief, quiet space for them to compose themselves. Reassure them that mistakes are part of learning. Follow up after class."
+            },
+            {
+                type: "Classroom Situation",
+                question: "Group Dynamics: You notice that a few students dominate group discussions while others remain silent. What techniques can you use to foster a more balanced participation, ensuring all voices are heard?",
+                answer: "Assign specific roles within groups (e.g., facilitator, note-taker, reporter). Use talking sticks or structured turn-taking. Encourage silent reflection before sharing. Implement 'think-pair-share' activities."
+            },
+            {
+                type: "Classroom Situation",
+                question: "Phonics in Context: A child understands phonics rules but struggles to apply them when reading unfamiliar words. What strategies would you use to bridge this gap?",
+                answer: "Provide opportunities for extensive reading of decodable texts. Explicitly teach decoding strategies like 'chunking' words. Encourage self-correction and re-reading. Use word families and analogy-based phonics."
+            },
+            {
+                type: "Classroom Situation",
+                question: "Diverse Learning Needs: In a mixed-ability classroom, how would you tailor your phonics instruction to meet the needs of both advanced and struggling readers?",
+                answer: "Implement differentiated instruction through small group work, individualized practice, and varied materials. Provide enrichment activities for advanced learners and targeted interventions for struggling ones."
+            },
+            {
+                type: "Classroom Situation",
+                question: "Parent Involvement: A parent expresses frustration over their child’s reading progress. How do you communicate effectively with them, using emotional intelligence to address their concerns?",
+                answer: "Listen empathetically to their concerns. Share specific observations and data about the child's progress. Offer practical strategies for home support. Maintain open and regular communication."
+            },
+            {
+                type: "Classroom Situation",
+                question: "Misbehavior During Lessons: A student frequently disrupts class during phonics activities. What approaches can you take to understand the underlying reasons for their behavior and address it constructively?",
+                answer: "Observe patterns of behavior. Engage in private conversations with the student to understand their perspective. Implement positive behavior supports, clear expectations, and consistent consequences. Adjust lesson activities if needed."
+            },
+            {
+                type: "Classroom Situation",
+                question: "Integrating Technology: You want to incorporate technology into grammar lessons but are unsure how to do so effectively. What multisensory tools or apps would you consider, and how would they benefit your students?",
+                answer: "Consider interactive grammar games, online sentence builders, or digital storytelling tools. These can provide immediate feedback, engaging visuals, and opportunities for creative application of grammar rules."
+            },
+            {
+                type: "Classroom Situation",
+                question: "Reflection and Growth: After teaching a lesson on emotional intelligence, a student approaches you to discuss their feelings about a recent conflict with a peer. How do you guide them in reflecting on their emotions and developing conflict-resolution skills?",
+                answer: "Listen actively without judgment. Help them identify their emotions and the root cause of the conflict. Brainstorm solutions together, focusing on empathy and communication. Practice role-playing conflict resolution."
+            },
+            // Phonics Difficulties (from original list, re-added for clarity)
+            {
+                type: "Phonics Difficulty",
+                question: "Phonics and Spelling: A student can decode words but struggles with spelling them correctly. What strategies can you implement to help them improve their spelling skills?",
+                answer: "Introduce phonics-based spelling activities, such as word sorts and spelling games that emphasize sound-letter relationships. Using multisensory techniques, like writing words in sand or using letter tiles, can also reinforce their learning."
+            },
+            {
+                type: "Phonics Difficulty",
+                question: "Lack of Motivation: You have a student who is disinterested in phonics lessons and often refuses to participate. How would you motivate them to engage with phonics activities?",
+                answer: "Incorporate games, interactive activities, connect phonics to topics of interest for the student, and offer small rewards."
+            },
+            {
+                type: "Phonics Difficulty",
+                question: "Transfer Issues: A child excels in phonics during one-on-one practice but struggles to apply these skills in group settings. How do you support their transition from individual to group work?",
+                answer: "Start with small group activities, then gradually increase group size. Use collaborative activities that encourage the application of phonics skills."
+            },
+            {
+                type: "Phonics Difficulty",
+                question: "English Language Learners: An English Language Learner (ELL) in your class is having difficulty with phonics due to limited vocabulary. What approaches can you take to support their learning?",
+                answer: "Focus on building vocabulary in parallel with phonics. Use visual aids and hands-on activities. Provide individual or small-group support."
+            },
+            {
+                type: "Phonics Difficulty",
+                question: "Phonemic Awareness Deficits: A student has difficulty with phonemic awareness, impacting their phonics skills. What targeted activities would you use to develop their phonemic awareness?",
+                answer: "Use activities like segmenting words into sounds, blending sounds to form words, and identifying rhymes and initial sounds in words."
+            },
+            // Additional ESL Scenarios (from original list)
+            {
+                type: "ESL Scenario",
+                question: "Students Not Paying Attention: During a listening exercise, many students are distracted and not focusing on the audio.",
+                answer: "Use short, engaging listening materials. Include interactive tasks before, during, and after listening. Use visual or kinesthetic cues."
+            },
+            {
+                type: "ESL Scenario",
+                question: "Difficulty with Speaking in Front of Peers: Several students are shy and refuse to speak during group discussions, impacting their speaking practice.",
+                answer: "Start with pair work or very small group speaking activities. Use games and activities that reduce pressure. Encourage speaking about familiar and interesting topics."
+            },
+            {
+                type: "ESL Scenario",
+                question: "Struggles with Vocabulary Retention: Students frequently forget new vocabulary words introduced in lessons.",
+                answer: "Use flashcards, language games, connecting words to images or actions. Encourage the use of new words in sentences and different contexts."
+            },
+            {
+                type: "ESL Scenario",
+                question: "Inconsistent Grammar Usage: Students often make grammatical errors in speaking, leading to confusion.",
+                answer: "Use grammar games, songs, and activities that focus on sentence patterns. Provide corrective feedback in a supportive, non-intimidating manner."
+            },
+            {
+                type: "ESL Scenario",
+                question: "Varied Learning Paces: Some students grasp concepts quickly, while others take longer, creating frustration in group work.",
+                answer: "Offer differentiated activities. Use collaborative group work where students can help each other. Provide opportunities for self-paced learning."
+            },
+            {
+                type: "ESL Scenario",
+                question: "Cultural and Language Barriers: Students from diverse backgrounds struggle to understand each other due to different accents and cultural references.",
+                answer: "Encourage students to share aspects of their cultures. Use diverse teaching materials that reflect different cultures. Organize cultural exchange activities."
+            },
+            {
+                type: "ESL Scenario",
+                question: "Limited Interaction with Peers: Many students are not interacting with each other during speaking activities, relying solely on the teacher.",
+                answer: "Use activities that require collaboration and problem-solving. Assign roles to students in group activities. Encourage open discussions and debates."
+            },
+            {
+                type: "ESL Scenario",
+                question: "Over-reliance on Native Language: Students frequently revert to their native language during English lessons, hindering their progress.",
+                answer: "Set clear rules for English usage. Use rewards to encourage English use. Create a supportive environment where students feel comfortable making mistakes in English."
+            },
+            {
+                type: "ESL Scenario",
+                question: "Fear of Making Mistakes: Students are hesitant to speak or try new sentences due to a fear of making grammatical or pronunciation mistakes.",
+                answer: "Create a low-stakes, supportive environment. Emphasize that mistakes are learning opportunities. Use peer correction and self-correction techniques. Provide sentence stems or scaffolds."
+            },
+            {
+                type: "ESL Scenario",
+                question: "Inadequate Listening Skills: Students struggle to follow directions or understand audio materials, affecting their overall comprehension.",
+                answer: "Break down listening tasks into smaller chunks. Pre-teach vocabulary. Use visual supports. Provide opportunities for repeated listening and different types of listening activities (e.g., for gist, for detail)."
+            }
+        ];
+
+        let availableQuestions = []; // To keep track of questions not yet used
+
+        // --- Game Initialization ---
+        function initializeGame() {
+            // Reset game state
+            board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
+            currentPlayerIndex = 0;
+            gameOver = false;
+            winOrder = []; // Clear previous winners
+
+            // Reset players array to empty, will be populated based on count
+            players = []; // Ensure players array is empty initially
+
+            availableQuestions = [...questions]; // Reset available questions
+            renderBoard(); // Render empty board
+
+            // Do NOT call updateCurrentPlayerDisplay() or updatePlayerList() here
+            // They will be called after players are initialized in handleStartGame()
+
+            hideQuestionModal();
+            hideCelebrationModal();
+
+            // Always show player input modal on initialize to allow player count selection
+            showPlayerInputModal();
+        }
+
+        function showPlayerInputModal() {
+            playerInputModal.style.display = 'flex';
+            // Set default number of players to 4 in the select dropdown
+            numPlayersSelect.value = '4';
+            // Dynamically generate player name input fields based on the default selected value (4)
+            generatePlayerNameInputs(4);
+
+            // Add event listener for the select dropdown
+            numPlayersSelect.addEventListener('change', (event) => {
+                numberOfPlayers = parseInt(event.target.value);
+                generatePlayerNameInputs(numberOfPlayers);
+            });
+        }
+
+        function generatePlayerNameInputs(count) {
+            playerNameInputsContainer.innerHTML = ''; // Clear existing inputs
+            for (let i = 1; i <= count; i++) {
+                const inputGroup = document.createElement('div');
+                inputGroup.classList.add('player-name-input-group', 'active'); // All generated are active
+                inputGroup.innerHTML = `
+                    <label for="player${i}Name" class="block text-left text-gray-700 text-sm font-bold mb-2">Player ${i} Name:</label>
+                    <input type="text" id="player${i}Name" placeholder="Enter name for Player ${i}" class="mb-2">
+                `;
+                playerNameInputsContainer.appendChild(inputGroup);
+            }
+        }
+
+        function handleStartGame() {
+            numberOfPlayers = parseInt(numPlayersSelect.value); // Get selected number of players
+
+            // Get names from dynamically generated inputs
+            const inputNames = [];
+            for (let i = 1; i <= numberOfPlayers; i++) {
+                inputNames.push(document.getElementById(`player${i}Name`).value);
+            }
+
+            // Shuffle player colors for random assignment
+            const shuffledColors = [...ALL_PLAYER_COLORS].sort(() => Math.random() - 0.5);
+
+            // Initialize players with the entered names and the *shuffled* colors
+            players = []; // Clear players array before populating
+            for (let i = 0; i < numberOfPlayers; i++) {
+                players.push({
+                    id: i + 1, // IDs are 1-based for board representation
+                    colorClass: shuffledColors[i].colorClass, // Assign shuffled color
+                    name: inputNames[i] || shuffledColors[i].defaultName, // Use input name or default
+                    correctAnswers: 0,
+                    incorrectAnswers: 0,
+                    hasWon: false,
+                    rank: null
+                });
+            }
+
+            playerInputModal.style.display = 'none';
+            // Now that players array is populated, update displays
+            updateCurrentPlayerDisplay();
+            updatePlayerList();
+        }
+
+        // --- Rendering Functions ---
+        function renderBoard() {
+            gameBoardElement.innerHTML = ''; // Clear existing board
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell', 'rounded-full', 'flex', 'items-center', 'justify-center', 'text-sm');
+                    if (board[r][c] !== 0) {
+                        // Find the player object by ID to get its colorClass
+                        const playerColor = players.find(p => p.id === board[r][c]).colorClass;
+                        cell.classList.add(playerColor);
+                    }
+                    gameBoardElement.appendChild(cell);
+                }
+            }
+            // Add click areas for columns
+            const dropAreaContainer = document.createElement('div');
+            dropAreaContainer.classList.add('column-drop-area');
+            for (let c = 0; c < COLS; c++) {
+                const dropArea = document.createElement('div');
+                dropArea.classList.add('drop-area');
+                dropArea.dataset.column = c;
+                dropArea.addEventListener('click', handleColumnClick);
+                dropAreaContainer.appendChild(dropArea);
+            }
+            gameBoardElement.appendChild(dropAreaContainer);
+        }
+
+        function updateCurrentPlayerDisplay() {
+            // Ensure players array is not empty before accessing currentPlayerIndex
+            if (players.length > 0) {
+                const currentPlayer = players[currentPlayerIndex];
+                currentPlayerIndicator.className = `player-indicator ${currentPlayer.colorClass}`;
+                currentPlayerText.textContent = currentPlayer.name;
+            } else {
+                // Clear display if no players are set yet
+                currentPlayerIndicator.className = `player-indicator`;
+                currentPlayerText.textContent = '';
+            }
+            updatePlayerList(); // Always call to update list, which handles empty players array
+        }
+
+        function updatePlayerList() {
+            playerListContainer.innerHTML = '';
+            // Only sort and render if players array is populated
+            if (players.length > 0) {
+                // Sort players by rank for display, then by original ID if no rank
+                const sortedPlayers = [...players].sort((a, b) => {
+                    if (a.rank && b.rank) return a.rank - b.rank;
+                    if (a.rank) return -1; // a has rank, b doesn't, a comes first
+                    if (b.rank) return 1;  // b has rank, a doesn't, b comes first
+                    return a.id - b.id; // Fallback to original ID order
+                });
+
+
+                sortedPlayers.forEach((player, index) => {
+                    const playerItem = document.createElement('div');
+                    playerItem.classList.add('player-list-item', 'flex', 'items-center', 'mb-2', 'p-2', 'rounded-lg');
+                    // Highlight current player only if they haven't won yet and it's their turn
+                    if (players[currentPlayerIndex] && player.id === players[currentPlayerIndex].id && !gameOver && !player.hasWon) {
+                        playerItem.classList.add('current-player');
+                    }
+                    if (player.hasWon) {
+                        playerItem.classList.add('has-won');
+                    }
+
+                    const playerColorDiv = document.createElement('div');
+                    playerColorDiv.className = `player-indicator ${player.colorClass} mr-2`;
+
+                    const playerNameSpan = document.createElement('span');
+                    playerNameSpan.classList.add('player-name', 'font-semibold');
+                    playerNameSpan.textContent = player.name;
+
+                    const playerScoreSpan = document.createElement('span');
+                    playerScoreSpan.classList.add('player-score');
+                    // Display only Approved score
+                    playerScoreSpan.textContent = `(${player.correctAnswers})`; // Simplified score display
+
+                    const playerRankSpan = document.createElement('span');
+                    playerRankSpan.classList.add('player-rank', 'ml-auto', 'font-bold');
+                    if (player.rank) {
+                        playerRankSpan.textContent = `Rank: ${player.rank}`;
+                    }
+
+                    playerItem.appendChild(playerColorDiv);
+                    playerItem.appendChild(playerNameSpan);
+                    playerItem.appendChild(playerScoreSpan);
+                    playerItem.appendChild(playerRankSpan);
+                    playerListContainer.appendChild(playerItem);
+                });
+            }
+        }
+
+        // --- Game Logic ---
+        function handleColumnClick(event) {
+            if (gameOver) return;
+
+            // If the current player has already won, skip their turn and move to the next active player.
+            if (players[currentPlayerIndex].hasWon) {
+                nextPlayerTurn(); // Find the next active player
+                return; // Exit the function, don't allow placing a piece
+            }
+
+            const col = parseInt(event.target.dataset.column);
+            let row = -1;
+
+            // Find the lowest empty row in the column
+            for (let r = ROWS - 1; r >= 0; r--) {
+                if (board[r][col] === 0) {
+                    row = r;
+                    break;
+                }
+            }
+
+            if (row !== -1) {
+                // Store the pending move, but don't place the piece yet
+                pendingMove = { row: row, col: col };
+                // Show question modal and start timer
+                showQuestionModal(); // No need to pass row, col here, they are in pendingMove
+                startTimer();
+            } else {
+                // console.log('Column is full!');
+            }
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval); // Clear any existing timer
+            timeLeft = TURN_TIME;
+            updateTimerBar(); // Initial update
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerBar();
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    // Time's up, treat as Not Approved
+                    handleNotApprovedAnswer(true); // Pass true to indicate time out
+                } else if (timeLeft <= 15) {
+                    timerBar.classList.add('warning');
+                } else {
+                    timerBar.classList.remove('warning');
+                }
+            }, 1000);
+        }
+
+        function updateTimerBar() {
+            const percentage = (timeLeft / TURN_TIME) * 100;
+            timerBar.style.width = `${percentage}%`;
+            if (percentage > 50) {
+                timerBar.style.backgroundColor = '#4CAF50'; // Green
+            } else if (percentage > 20) {
+                timerBar.style.backgroundColor = '#FFC107'; // Orange
+            } else {
+                timerBar.style.backgroundColor = '#F44336'; // Red
+            }
+        }
+
+        function showQuestionModal() {
+            // Select a random question from availableQuestions
+            currentQuestionIndex = Math.floor(Math.random() * availableQuestions.length);
+            currentQuestionData = availableQuestions[currentQuestionIndex]; // Store for later use
+
+            modalTitle.textContent = currentQuestionData.type === "Phonics Difficulty" ? "Phonics Difficulty Question" : currentQuestionData.type === "ESL Scenario" ? "ESL Scenario Question" : "Classroom Situation Question";
+            modalQuestion.textContent = currentQuestionData.question;
+            modalAnswer.textContent = currentQuestionData.answer ? `Suggested Answer: ${currentQuestionData.answer}` : '';
+            modalAnswer.classList.add('hidden'); // Ensure answer is hidden initially
+            modalButtons.classList.remove('hidden'); // Show Approved/Not Approved buttons
+            continueButton.classList.add('hidden'); // Hide continue button
+
+            questionModal.style.display = 'flex'; // Show the modal
+        }
+
+        function hideQuestionModal() {
+            clearInterval(timerInterval); // Stop timer when modal is hidden
+            timerBar.classList.remove('warning'); // Remove warning class
+            questionModal.style.display = 'none'; // Hide the modal
+            currentQuestionData = null; // Clear current question data
+            currentQuestionIndex = -1; // Reset question index
+            pendingMove = { row: -1, col: -1 }; // Clear pending move
+        }
+
+        function handleApprovedAnswer() {
+            // Place the piece on the board
+            board[pendingMove.row][pendingMove.col] = players[currentPlayerIndex].id;
+            renderBoard(); // Re-render to show the new piece
+
+            players[currentPlayerIndex].correctAnswers++; // Increment correct score
+            updatePlayerList(); // Update score display
+
+            // Remove the question from available questions so it's not repeated
+            if (currentQuestionIndex !== -1) {
+                availableQuestions.splice(currentQuestionIndex, 1);
+            }
+            if (availableQuestions.length === 0) {
+                availableQuestions = [...questions]; // Refill if all used
+            }
+
+            // Check for win after placing the piece.
+            // If the player wins, their hasWon status and rank are set inside checkWin.
+            checkWin(pendingMove.row, pendingMove.col);
+
+            hideQuestionModal();
+            // Current player's turn continues, so DO NOT call nextPlayerTurn() here.
+        }
+
+        function handleNotApprovedAnswer(timedOut = false) {
+            // Do NOT place the piece on the board. The cell remains empty.
+            // board[pendingMove.row][pendingMove.col] remains 0
+
+            players[currentPlayerIndex].incorrectAnswers++; // Increment incorrect score
+            updatePlayerList(); // Update score display
+
+            if (timedOut) {
+                modalTitle.textContent = "Time's Up!";
+                modalQuestion.textContent = "The time for this turn has expired.";
+            }
+
+            modalAnswer.classList.remove('hidden'); // Show the answer
+            modalButtons.classList.add('hidden'); // Hide Approved/Not Approved buttons
+            continueButton.classList.remove('hidden'); // Show continue button to dismiss answer
+
+            // The question is NOT removed from availableQuestions, so it can be asked again.
+            // No need to explicitly add it back, as it was never removed from the main array.
+
+            // The turn passes to the next player
+            nextPlayerTurn();
+        }
+
+        function handleContinueAfterIncorrect() {
+            hideQuestionModal();
+            // The turn has already switched in handleNotApprovedAnswer, so no further action needed here.
+        }
+
+        function nextPlayerTurn() {
+            let nextIndex = (currentPlayerIndex + 1) % players.length;
+            let attempts = 0; // To prevent infinite loop if all players have won
+
+            // Loop to find the next player who has not yet won
+            while (players[nextIndex].hasWon && attempts < players.length) {
+                nextIndex = (nextIndex + 1) % players.length;
+                attempts++;
+            }
+
+            if (attempts === players.length) {
+                // All players have won, or no more moves possible
+                gameOver = true;
+                alert("Game Over! All players have achieved Connect 4 or no more moves are possible.");
+                return;
+            }
+
+            currentPlayerIndex = nextIndex;
+            updateCurrentPlayerDisplay();
+        }
+
+
+        function checkWin(row, col) {
+            const player = board[row][col];
+            let isWin = false;
+            let winningCells = [];
+
+            // Helper to check a line
+            const checkLine = (r, c, dr, dc) => {
+                let count = 0;
+                let lineCells = [];
+                for (let i = -3; i <= 3; i++) {
+                    const currR = r + i * dr;
+                    const currC = c + i * dc;
+                    if (currR >= 0 && currR < ROWS && currC >= 0 && currC < COLS && board[currR][currC] === player) {
+                        count++;
+                        lineCells.push({r: currR, c: currC});
+                        if (count >= 4) {
+                            // Found 4 in a row, extract the last 4 cells
+                            return lineCells.slice(lineCells.length - 4);
+                        }
+                    } else {
+                        count = 0;
+                        lineCells = [];
+                    }
+                }
+                return null;
+            };
+
+            // Check horizontal
+            winningCells = checkLine(row, col, 0, 1);
+            if (winningCells) { isWin = true; }
+
+            // Check vertical
+            if (!isWin) {
+                winningCells = checkLine(row, col, 1, 0);
+                if (winningCells) { isWin = true; }
+            }
+
+            // Check diagonal (top-left to bottom-right)
+            if (!isWin) {
+                winningCells = checkLine(row, col, 1, 1);
+                if (winningCells) { isWin = true; }
+            }
+
+            // Check diagonal (bottom-left to top-right)
+            if (!isWin) {
+                winningCells = checkLine(row, col, -1, 1);
+                if (winningCells) { isWin = true; }
+            }
+
+            if (isWin && !players[currentPlayerIndex].hasWon) {
+                players[currentPlayerIndex].hasWon = true;
+                players[currentPlayerIndex].rank = winOrder.length + 1;
+                winOrder.push({ playerId: players[currentPlayerIndex].id, rank: players[currentPlayerIndex].rank });
+                updatePlayerList(); // Update sidebar with win status and rank
+                triggerCelebration(players[currentPlayerIndex].name, players[currentPlayerIndex].rank);
+
+                // Highlight winning cells on board
+                const cells = gameBoardElement.querySelectorAll('.cell');
+                winningCells.forEach(coord => {
+                    const index = coord.r * COLS + coord.c;
+                    if (cells[index]) {
+                        cells[index].classList.add('highlight');
+                    }
+                });
+                return true;
+            }
+            return false;
+        }
+
+        function triggerCelebration(playerName, rank) {
+            celebrationPlayerName.textContent = playerName;
+            let rankText = '';
+            switch (rank) {
+                case 1: rankText = '1st Place!'; break;
+                case 2: rankText = '2nd Place!'; break;
+                case 3: rankText = '3rd Place!'; break;
+                case 4: rankText = '4th Place!'; break;
+                default: rankText = 'a Winner!'; break;
+            }
+            celebrationRank.textContent = rankText;
+            celebrationModal.style.display = 'flex';
+            setTimeout(() => {
+                hideCelebrationModal();
+            }, 3000); // Hide after 3 seconds
+        }
+
+        function hideCelebrationModal() {
+            celebrationModal.style.display = 'none';
+        }
+
+
+        // Event Listeners
+        resetButton.addEventListener('click', initializeGame);
+        startGameButton.addEventListener('click', handleStartGame);
+        closeModalButton.addEventListener('click', hideQuestionModal);
+        approvedButton.addEventListener('click', handleApprovedAnswer);
+        notApprovedButton.addEventListener('click', handleNotApprovedAnswer);
+        continueButton.addEventListener('click', handleContinueAfterIncorrect);
+
+        // Initialize the game when the page loads
+        window.onload = initializeGame;
+
+    </script>
+</body>
+</html>
